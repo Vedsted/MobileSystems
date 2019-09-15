@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <Button
+        android:id="@+id/but_location"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:gravity="start|center"
+        android:onClick="goToLocationActivity"
+        android:text="@string/location"
+        android:textAlignment="textStart"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/but_gyroscope"/>
+
+    <Button
+        android:id="@+id/but_gyroscope"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:gravity="start|center"
+        android:onClick="goToGyroscopeActivity"
+        android:text="@string/gyroscope"
+        android:textAlignment="textStart"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/but_location"
+        app:layout_constraintBottom_toTopOf="@id/but_proximity"/>
+
+    <Button
+        android:id="@+id/but_proximity"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:gravity="start|center"
+        android:onClick="goToTemperatureActivity"
+        android:text="@string/proximity"
+        android:textAlignment="textStart"
+        app:layout_constraintBottom_toTopOf="@id/but_light"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/but_gyroscope" />
+
+    <Button
+        android:id="@+id/but_light"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:gravity="start|center"
+        android:onClick="goToLightActivity"
+        android:text="@string/light"
+        android:textAlignment="textStart"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/but_proximity"
+        app:layout_constraintBottom_toTopOf="@id/but_gravity"/>
+
+    <Button
+        android:id="@+id/but_gravity"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="16dp"
+        android:gravity="start|center"
+        android:onClick="goToGravityActivity"
+        android:text="@string/gravity"
+        android:textAlignment="textStart"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/but_light" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
