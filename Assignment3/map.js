@@ -1,10 +1,8 @@
 
-var mymap;
-var routeGPS = [];
-var routeMobile = [];
-
+var mymap, routeGPS, routeMobile, lineReader, file, unit, filter, filterGranularity;
 
 function createMap(){
+	mymap == null ? null : mymap.remove();
 
 	mymap = L.map('mapid').setView([55.368877, 10.428296], 13);
 	
@@ -17,35 +15,49 @@ function createMap(){
 }
 
 function drawRoute() {  
-	
 
-	var lineReader = require('readline').createInterface({
-		input: require('fs').createReadStream('Walking.csv')
+	routeGPS = [];
+	routeMobile = [];
+
+	lineReader = require('readline').createInterface({
+		input: require('fs').createReadStream(file)
 	});
 
-	lineReader.on('line', function (line) {
-		line = line.split(',');
-		line = line.map(l => parseFloat(l));
-		  routeGPS.push([line[1],line[2]]);
-		  routeMobile.push([line[3],line[4]]);
-	});	
-
-
-	lineReader.on('close', () => {
-
-		//routeGPS.shift();
-		routeMobile.shift();
-
-		//routeMobile = meanFilter(routeMobile, 5);
-		routeMobile = medianFilter(routeMobile, 5);
-
-		//var polylineGPS = L.polyline(routeGPS, {color: 'red'}).addTo(mymap);
-		var polylineMobile = L.polyline(routeMobile, {color: 'Blue'}).addTo(mymap);
-
-		// zoom the map to the polyline
-		mymap.fitBounds(polylineMobile.getBounds());
-	});
+	lineReader.on('line', prepareLine);	
+	lineReader.on('close', updateMap);
 }
+
+function prepareLine(line){
+	line = line.split(',');
+	line = line.map(l => parseFloat(l));
+	routeGPS.push([line[1],line[2]]);
+	routeMobile.push([line[3],line[4]]);
+}
+
+function updateMap() {
+	
+	var data;
+
+	if (unit === "GPS") {
+		routeGPS.shift();
+		data = routeGPS;
+	} else {
+		routeMobile.shift();
+		data = routeMobile;
+	}
+
+	if(filter === "mean") {
+		data = meanFilter(data,  filterGranularity);
+	} else if (filter === "median") {
+		data = medianFilter(data,  filterGranularity);
+	} 
+
+	var poly = L.polyline(data, {color: 'red'}).addTo(mymap);
+
+	// zoom the map to the polyline
+	mymap.fitBounds(poly.getBounds());
+}
+
 
 function meanFilter(positions, n){
 	var ret = [];
@@ -68,12 +80,25 @@ function medianFilter(positions, n){
 		var ll = Math.floor(lats.length/2)
 		ret.push([lats[ll], longs[ll]]);
 	}
-	
 	return ret;
 }
 
 
+function reload(){
+	createMap();
 
+	file = document.getElementById("fileSelector");
+	file = file.options[file.selectedIndex].value
+	
+	unit = document.getElementById("unitSelector");
+	unit = unit.options[unit.selectedIndex].value;
+	
+	filter = document.getElementById("filterSelector");
+	filter = filter.options[filter.selectedIndex].value;
+	
+	filterGranularity = parseInt(document.getElementById("intervalInput").value);
+	
+	drawRoute();
+}
 
-createMap();
-drawRoute();
+reload();

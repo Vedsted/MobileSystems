@@ -13,11 +13,46 @@
    crossorigin=""></script>
    <style>
        #mapid { 
-           height: 98vh; 
+           height: 96vh;
+           margin-top: 5pt;
+        }
+        .a {
+            color: white;
+            display: inline;
+            margin-left: 5pt;
         }
    </style>
 </head>
 <body>
+    <div class="a">
+        <label>Data:</label>
+        <select id="fileSelector">
+            <option value="Walking.csv">Walking</option>
+            <option value="Biking.csv">Biking</option>
+            <option value="Driving.csv">Driving</option>
+            <option value="Running.csv">Running</option>
+        </select>
+    </div>
+    <div class="a">
+        <label>Unit:</label>
+        <select id="unitSelector">
+            <option value="Mobile">Mobile</option>
+            <option value="GPS">GPS</option>
+        </select>
+    </div>
+    <div class="a">
+        <label>Filter:</label>
+        <select id="filterSelector">
+            <option value="raw">Raw</option>
+            <option value="mean">Mean</option>
+            <option value="median">Median</option>
+        </select>
+    </div>
+    <div class="a">
+        <label>Interval:</label>
+        <input id="intervalInput" type="number" value="10"/>
+    </div>
+    <button id="enter" onclick="reload()">Enter</button>
     <div id="mapid"></div>
     <script src="map.js"></script>
 </body>
