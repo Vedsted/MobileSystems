@@ -48,9 +48,13 @@ function updateMap() {
 
 	if(filter === "mean") {
 		data = meanFilter(data,  filterGranularity);
+	} else if (filter === "mean2") {
+		data = meanFilter2(data,  filterGranularity);
 	} else if (filter === "median") {
 		data = medianFilter(data,  filterGranularity);
-	} 
+	} else if (filter === "median2") {
+		data = medianFilter2(data,  filterGranularity);
+	}
 
 	var poly = L.polyline(data, {color: 'red'}).addTo(mymap);
 
@@ -58,7 +62,12 @@ function updateMap() {
 	mymap.fitBounds(poly.getBounds());
 }
 
-
+/**
+ * Finds a mean point for every n points.
+ * The number output points are: postitions.length/n
+ * @param {List<[lat,long]>} positions 
+ * @param {Int} n 
+ */
 function meanFilter(positions, n){
 	var ret = [];
 	for (var i=0; i < positions.length; i+= n) {
@@ -68,7 +77,29 @@ function meanFilter(positions, n){
 	return ret;
 }
 
+/**
+ * takes the mean for each point.
+ * Uses the n/2 points before and after the point analysed
+ * The number output points are: postitions.length
+ * @param {List<[lat,long]>} positions 
+ * @param {Int} n 
+ */
+function meanFilter2(positions, n){
+	var ret = [];
+	n = Math.floor(n/2);
+	for (var i=0; i < positions.length; i+= n) {
+		arr = positions.slice(i < n ? 0:i-n,i+n).filter(e => e != null);
+		ret.push(arr.reduce((l1,l2) => [l1[0] + l2[0],l1[1] + l2[1]]).map(e => e/arr.length));
+	}
+	return ret;
+}
 
+/**
+ * Finds a median point for every n points.
+ * The number output points are: postitions.length/n
+ * @param {List<[lat,long]>} positions 
+ * @param {Int} n 
+ */
 function medianFilter(positions, n){
 	var ret = [];
 	for (var i=0; i < positions.length; i+= n) {
@@ -76,10 +107,33 @@ function medianFilter(positions, n){
 
 		var lats = arr.map(e => e[0]).sort();
 		var longs = arr.map(e => e[1]).sort();
-
+		
 		var ll = Math.floor(lats.length/2)
 		ret.push([lats[ll], longs[ll]]);
 	}
+	return ret;
+}
+
+/**
+ * takes the median for each point.
+ * Uses the n/2 points before and after the point analysed
+ * The number output points are: postitions.length
+ * @param {List<[lat,long]>} positions 
+ * @param {Int} n 
+ */
+function medianFilter2(positions, n){
+	var ret = [];
+	n = Math.floor(n/2);
+	for (var i=0; i < positions.length; i++) {
+		arr = positions.slice(i < n ? 0:i-n,i+n).filter(e => e != null);
+		
+		var lats = arr.map(e => e[0]).sort();
+		var longs = arr.map(e => e[1]).sort();
+		
+		var ll = Math.floor(lats.length/2)
+		ret.push([lats[ll], longs[ll]]);
+	}
+	
 	return ret;
 }
 
