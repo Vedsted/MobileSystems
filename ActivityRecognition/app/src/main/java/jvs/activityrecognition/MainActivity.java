@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.PowerManager;
+import android.text.format.DateFormat;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -19,7 +20,9 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.gms.location.ActivityRecognition;
 import com.google.android.gms.location.ActivityRecognitionClient;
+import com.google.android.gms.location.ActivityTransition;
 import com.google.android.gms.location.ActivityTransitionRequest;
+import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -32,8 +35,11 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -78,11 +84,15 @@ public class MainActivity extends AppCompatActivity {
         this.mBroadcastReceiver =  new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                String type = intent.getStringExtra("TYPE");
-                String confidence = intent.getStringExtra("CONFIDENCE");
+                String type = intent.getStringExtra("ActivityType");
+                String transition = intent.getStringExtra("TransitionType");
+                //long elapsedTime = intent.getLongExtra("Date", 0);
 
 
-                handler(type, confidence);
+                System.out.println(type);
+                System.out.println(transition);
+                //System.out.println(elapsedTime);
+                handler(type, transition);
             }
         };
 
@@ -104,13 +114,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void handler(String type, String confidence) {
+    public void handler(String type, String transition) {
         txtActivity.setText(type);
-        txtConfidence.setText(confidence);
+        txtConfidence.setText(transition);
 
-
-        String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        String toWrite = date + "," + type + "," + confidence + "\n";
+        String date = DateFormat.format("dd/MM-yyyy - HH:mm:ss", new Date()).toString();
+        String toWrite = date + "," + type + "," + transition + "\n";
 
         try {
             writer.append(toWrite);
@@ -127,11 +136,11 @@ public class MainActivity extends AppCompatActivity {
         pendingIntent = PendingIntent.getService(this, 1, intent, 0);
 
         // PendingIntent pendingIntent;  // Your pending intent to receive callbacks.
-        Task task = activityClient
-                .requestActivityUpdates(5 * 1000, pendingIntent);
+        Task task = activityClient.requestActivityTransitionUpdates(ActivityTransitionRequestCreator.getRequest(), pendingIntent);
         task.addOnSuccessListener(o -> System.out.println("Listener created succesfully"));
-        task.addOnFailureListener(e -> System.out.println("Listener not created!"));
+        task.addOnFailureListener(e -> System.out.println("Listener not created!\n" + e.getMessage()));
     }
+
 
     public void startTracking(View view) {
         LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, new IntentFilter("jvs.activityrecognition.UPDATE"));

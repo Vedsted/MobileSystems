@@ -7,6 +7,7 @@ import androidx.annotation.Nullable;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.gms.location.ActivityRecognitionResult;
+import com.google.android.gms.location.ActivityTransitionResult;
 
 public class ActivityTrackingService extends IntentService {
 
@@ -20,25 +21,24 @@ public class ActivityTrackingService extends IntentService {
 
         System.out.println("Something recieved");
 
-
-        if (ActivityRecognitionResult.hasResult(intent)) {
-            ActivityRecognitionResult result = ActivityRecognitionResult.extractResult(intent);
-            System.out.println(result.getMostProbableActivity());
-            Intent broardcastIntent = new Intent();
-            broardcastIntent.setAction("jvs.activityrecognition.UPDATE");
-            broardcastIntent.putExtra("TYPE", getTypeFromResult(result));
-            broardcastIntent.putExtra("CONFIDENCE", String.valueOf(result.getMostProbableActivity().getConfidence()));
-
-            LocalBroadcastManager.getInstance(this).sendBroadcast(broardcastIntent);
+        if (ActivityTransitionResult.hasResult(intent)){
+            ActivityTransitionResult result = ActivityTransitionResult.extractResult(intent);
+            result.getTransitionEvents().forEach(event -> {
+                System.out.println(event.getTransitionType());
+                Intent broardcastIntent = new Intent();
+                broardcastIntent.setAction("jvs.activityrecognition.UPDATE");
+                broardcastIntent.putExtra("ActivityType", getTypeFromResult(event.getActivityType()));
+                broardcastIntent.putExtra("TransitionType", getTransitionType(event.getTransitionType()));
+                LocalBroadcastManager.getInstance(this).sendBroadcast(broardcastIntent);
+            });
         }
-
     }
 
-    private String getTypeFromResult(ActivityRecognitionResult result){
+    private String getTypeFromResult(int result){
 
         String type;
 
-        switch (result.getMostProbableActivity().getType()){
+        switch (result){
             case 0:
                 type = "IN_VEHICLE";
                 break;
@@ -83,5 +83,9 @@ public class ActivityTrackingService extends IntentService {
 
         return type;
 
+    }
+
+    private String getTransitionType(int i) {
+        return i == 1 ? "EXIT": "ENTER";
     }
 }
