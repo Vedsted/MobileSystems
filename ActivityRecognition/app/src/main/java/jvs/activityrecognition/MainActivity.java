@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.PowerManager;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -46,7 +47,10 @@ public class MainActivity extends AppCompatActivity {
 
     private BroadcastReceiver mBroadcastReceiver;
 
-    private StringBuilder stringBuilder;
+    private FileWriter writer;
+    private TextView txtLastUpdate;
+
+    private PowerManager.WakeLock wakeLock;
 
 
     @Override
@@ -62,9 +66,13 @@ public class MainActivity extends AppCompatActivity {
 
         this.txtActivity = findViewById(R.id.txtActivity);
         this.txtConfidence = findViewById(R.id.txtConfidence);
+        this.txtLastUpdate= findViewById(R.id.txtLastUpdate);
 
         this.activityClient = ActivityRecognition.getClient(this);
 
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                "MyApp::MyWakelockTag");
 
 
         this.mBroadcastReceiver =  new BroadcastReceiver() {
@@ -78,6 +86,20 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+
+        try {
+            File root = new File(Environment.getExternalStorageDirectory(), "ActivityRecognition");
+            if (!root.exists()) {
+                root.mkdirs();
+            }
+            File gpxfile = new File(root, "MyData.csv");
+            writer = new FileWriter(gpxfile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        startTracking(null);
+
         establishActivityRecognition();
     }
 
@@ -86,33 +108,29 @@ public class MainActivity extends AppCompatActivity {
         txtActivity.setText(type);
         txtConfidence.setText(confidence);
 
-        String toWrite = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "," + type + "," + confidence + "\n";
 
-        stringBuilder.append(toWrite);
+        String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+        String toWrite = date + "," + type + "," + confidence + "\n";
+
+        try {
+            writer.append(toWrite);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        txtLastUpdate.setText(date);
 
     }
 
     private void establishActivityRecognition(){
         intent = new Intent(this, ActivityTrackingService.class);
-        pendingIntent = PendingIntent.getService(this, 1, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        pendingIntent = PendingIntent.getService(this, 1, intent, 0);
 
         // PendingIntent pendingIntent;  // Your pending intent to receive callbacks.
         Task task = activityClient
-                .requestActivityUpdates(15 * 1000, pendingIntent);
-        task.addOnSuccessListener(new OnSuccessListener() {
-            @Override
-            public void onSuccess(Object o) {
-                System.out.println("Listener created succesfully");
-            }
-        });
-
-
-        task.addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                System.out.println("Listener not created!");
-            }
-        });
+                .requestActivityUpdates(5 * 1000, pendingIntent);
+        task.addOnSuccessListener(o -> System.out.println("Listener created succesfully"));
+        task.addOnFailureListener(e -> System.out.println("Listener not created!"));
     }
 
     public void startTracking(View view) {
@@ -121,8 +139,7 @@ public class MainActivity extends AppCompatActivity {
         this.txtConfidence.setText("NA");
         this.btnStart.setEnabled(false);
         this.btnStop.setEnabled(true);
-
-        this.stringBuilder = new StringBuilder();
+        wakeLock.acquire();
     }
 
     public void stopTracking(View view) {
@@ -133,18 +150,13 @@ public class MainActivity extends AppCompatActivity {
         this.btnStop.setEnabled(false);
 
         try {
-            File root = new File(Environment.getExternalStorageDirectory(), "ActivityRecognition");
-            if (!root.exists()) {
-                root.mkdirs();
-            }
-            File gpxfile = new File(root, "MyData.csv");
-            FileWriter writer = new FileWriter(gpxfile);
-            writer.append(stringBuilder.toString());
             writer.flush();
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        wakeLock.release();
 
     }
 
