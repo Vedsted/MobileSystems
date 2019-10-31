@@ -1,4 +1,4 @@
-
+const url = "http://localhost:3000"
 var mymap, routeGPS, routeMobile, lineReader, file, unit, filter, filterGranularity;
 
 function createMap(){
@@ -34,9 +34,9 @@ function prepareLine(line){
 	routeMobile.push([line[3],line[4]]);
 }
 
-function updateMap() {
-	
-	var data;
+async function updateMap() {
+
+	let data;
 
 	if (unit === "GPS") {
 		routeGPS.shift();
@@ -47,94 +47,41 @@ function updateMap() {
 	}
 
 	if(filter === "mean") {
-		data = meanFilter(data,  filterGranularity);
-	} else if (filter === "mean2") {
-		data = meanFilter2(data,  filterGranularity);
+		data = await meanFilter(data, filterGranularity);
 	} else if (filter === "median") {
-		data = medianFilter(data,  filterGranularity);
-	} else if (filter === "median2") {
-		data = medianFilter2(data,  filterGranularity);
+		data = await medianFilter(data, filterGranularity);
 	}
 
-	var poly = L.polyline(data, {color: 'red'}).addTo(mymap);
-
+	let poly = L.polyline(data, {color: 'red'}).addTo(mymap);
 	// zoom the map to the polyline
 	mymap.fitBounds(poly.getBounds());
-}
-
-/**
- * Finds a mean point for every n points.
- * The number output points are: postitions.length/n
- * @param {List<[lat,long]>} positions 
- * @param {Int} n 
- */
-function meanFilter(positions, n){
-	var ret = [];
-	for (var i=0; i < positions.length; i+= n) {
-		arr = positions.slice(i,i+n).filter(e => e != null);
-		ret.push(arr.reduce((l1,l2) => [l1[0] + l2[0],l1[1] + l2[1]]).map(e => e/arr.length));
-	}
-	return ret;
-}
-
-/**
- * takes the mean for each point.
- * Uses the n/2 points before and after the point analysed
- * The number output points are: postitions.length
- * @param {List<[lat,long]>} positions 
- * @param {Int} n 
- */
-function meanFilter2(positions, n){
-	var ret = [];
-	n = Math.floor(n/2);
-	for (var i=0; i < positions.length; i+= n) {
-		arr = positions.slice(i < n ? 0:i-n,i+n).filter(e => e != null);
-		ret.push(arr.reduce((l1,l2) => [l1[0] + l2[0],l1[1] + l2[1]]).map(e => e/arr.length));
-	}
-	return ret;
-}
-
-/**
- * Finds a median point for every n points.
- * The number output points are: postitions.length/n
- * @param {List<[lat,long]>} positions 
- * @param {Int} n 
- */
-function medianFilter(positions, n){
-	var ret = [];
-	for (var i=0; i < positions.length; i+= n) {
-		arr = positions.slice(i,i+n).filter(e => e != null);
-
-		var lats = arr.map(e => e[0]).sort();
-		var longs = arr.map(e => e[1]).sort();
-		
-		var ll = Math.floor(lats.length/2)
-		ret.push([lats[ll], longs[ll]]);
-	}
-	return ret;
-}
-
-/**
- * takes the median for each point.
- * Uses the n/2 points before and after the point analysed
- * The number output points are: postitions.length
- * @param {List<[lat,long]>} positions 
- * @param {Int} n 
- */
-function medianFilter2(positions, n){
-	var ret = [];
-	n = Math.floor(n/2);
-	for (var i=0; i < positions.length; i++) {
-		arr = positions.slice(i < n ? 0:i-n,i+n).filter(e => e != null);
-		
-		var lats = arr.map(e => e[0]).sort();
-		var longs = arr.map(e => e[1]).sort();
-		
-		var ll = Math.floor(lats.length/2)
-		ret.push([lats[ll], longs[ll]]);
-	}
 	
-	return ret;
+}
+
+function createRequestBody(data, filterGranularity){
+	return {
+		data: data,
+		filterGranularity: filterGranularity
+	}
+}
+
+function meanFilter(data, filterGranularity) {
+	return sendFilterRequest("mean", createRequestBody(data, filterGranularity))
+}
+
+function medianFilter(data, filterGranularity) {
+	return sendFilterRequest("median", createRequestBody(data, filterGranularity))
+}
+
+async function sendFilterRequest(filter, body){
+	let response = await fetch(`${url}/${filter}`, {
+		method: 'POST',
+		body: JSON.stringify(body), // data can be `string` or {object}!
+		headers: {
+		  'Content-Type': 'application/json'
+		}
+	  });
+	return await response.json();
 }
 
 

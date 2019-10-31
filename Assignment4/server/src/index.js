@@ -1,17 +1,28 @@
-const pathSmoother = require('./pathSmoother');
-const express = require('express')
-const app = express()
-const port = 3000
+const ps = require('./pathSmoother');
+let arguments = process.argv.splice(2);
+
+const express = require('express');
+const app = express();
+
+app.use(express.json()) // for parsing application/json
+app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
+
+const port = arguments[0] || 3000;
 
 
-app.get('/median', (req, res) => {
-    console.log(req);
-    
-    res.send('Hello World!')
+app.post('/median', (req, res, next) => {
+    let data = req.body.data;
+    let filterGranularity = req.body.filterGranularity;
+
+    res.send(ps.median(data, filterGranularity));
 });
 
-app.get('/mean', (req, res) => {
-    res.send('Hello World!')
+app.post('/mean', (req, res, next) => {
+
+    let data = req.body.data;
+    let filterGranularity = req.body.filterGranularity;
+
+    res.send(ps.mean(data, filterGranularity));
 });
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))

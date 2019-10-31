@@ -6,3 +6,5 @@ Assignment4/server/node_modules
 Assignment4/server/node_modules/
 Assignment4/client/node_modules
 Assignment4/client/node_modules/
+**/.idea/
+**/node_modules
