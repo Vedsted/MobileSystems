@@ -2,11 +2,17 @@ package jvs.activityrecognition;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.os.Environment;
 
 import androidx.annotation.Nullable;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.gms.location.ActivityRecognitionResult;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class ActivityTrackingService extends IntentService {
 
@@ -17,19 +23,30 @@ public class ActivityTrackingService extends IntentService {
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
 
-
-        System.out.println("Something recieved");
-
-
         if (ActivityRecognitionResult.hasResult(intent)) {
             ActivityRecognitionResult result = ActivityRecognitionResult.extractResult(intent);
-            System.out.println(result.getMostProbableActivity());
-            Intent broardcastIntent = new Intent();
-            broardcastIntent.setAction("jvs.activityrecognition.UPDATE");
-            broardcastIntent.putExtra("TYPE", getTypeFromResult(result));
-            broardcastIntent.putExtra("CONFIDENCE", String.valueOf(result.getMostProbableActivity().getConfidence()));
 
-            LocalBroadcastManager.getInstance(this).sendBroadcast(broardcastIntent);
+
+            String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+            String type = getTypeFromResult(result);
+            String confidence = String.valueOf(result.getMostProbableActivity().getConfidence());
+            String toWrite = date + "," + type + "," + confidence + "\n";
+
+            try {
+                File root = new File(Environment.getExternalStorageDirectory(), "ActivityRecognition");
+                if (!root.exists()) {
+                    root.mkdirs();
+                }
+                File gpxfile = new File(root, "MyData.csv");
+                FileWriter writer = new FileWriter(gpxfile, true);
+                writer.write(toWrite);
+                writer.flush();
+                writer.close();
+
+                System.out.println("Wrote following to file: " + toWrite);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
     }
