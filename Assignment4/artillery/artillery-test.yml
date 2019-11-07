@@ -1,5 +1,5 @@
 config:
-  target: 'http://192.168.1.161:3000'
+  target: 'http://192.168.1.115:3000'
   phases:
     - duration: 60 # test duration
       arrivalRate: 10 # Number of new users every sec
