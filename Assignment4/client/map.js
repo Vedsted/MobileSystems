@@ -1,4 +1,5 @@
-const url = "http://localhost:3000"
+//const url = "http://192.168.1.132:3000"
+const url = "http://192.168.1.132:3000"
 var mymap, routeGPS, routeMobile, lineReader, file, unit, filter, filterGranularity;
 
 function createMap(){

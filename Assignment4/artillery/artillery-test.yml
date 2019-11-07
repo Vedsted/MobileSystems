@@ -1,14 +1,23 @@
 config:
-  target: 'http://localhost:3000'
+  target: 'http://192.168.1.161:3000'
   phases:
-    - duration: 60
-      arrivalRate: 50
-  processor: "./payloadCreator.js"
+    - duration: 60 # test duration
+      arrivalRate: 10 # Number of new users every sec
+  processor: "./geoData.js"
 scenarios:
-  - flow:
-    - function: "createBody"
-    - post:
-        url: "/mean"
-        json: 
-          data: "{{data}}"
-          filterGranularity: "{{filterGranularity}}" 
+  - name: "Mean API test"
+    weight: 50 # Average 50% of users
+    flow:
+      - loop:
+          - post:
+              url: "/mean"
+              beforeRequest: setJSONBody
+        count: 100
+  - name: "Median API test"
+    weight: 50 # Average 50% of users
+    flow:
+      - loop:
+          - post:
+              url: "/median"
+              beforeRequest: setJSONBody
+        count: 100
