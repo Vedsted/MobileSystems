@@ -87,7 +87,7 @@ function meanFilter(positions, n){
 function meanFilter2(positions, n){
 	var ret = [];
 	n = Math.floor(n/2);
-	for (var i=0; i < positions.length; i+= n) {
+	for (var i=0; i < positions.length; i++) {
 		arr = positions.slice(i < n ? 0:i-n,i+n).filter(e => e != null);
 		ret.push(arr.reduce((l1,l2) => [l1[0] + l2[0],l1[1] + l2[1]]).map(e => e/arr.length));
 	}
