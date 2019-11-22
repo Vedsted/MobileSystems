@@ -52,7 +52,7 @@ public class DetectedActivityParser {
             return type;
     }
 
-    public static long parseActivitypeToInterval(int i){
+    public static long parseActivityTypeToInterval(int i){
         long type;
 
         switch (i){
@@ -92,13 +92,12 @@ public class DetectedActivityParser {
                 type = 3*1000;
                 break;
             case 16:
-                type = 1*1000;
+                type = 1000;
                 break;
             case 17:
                 type = 2*1000;
         }
 
-        //return type;
-        return 1000L;
+        return type;
     }
 }

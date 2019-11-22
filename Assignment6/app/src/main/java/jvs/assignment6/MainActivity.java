@@ -2,9 +2,13 @@ package jvs.assignment6;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,7 +22,6 @@ import com.google.android.gms.location.ActivityRecognitionClient;
 import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 
 import java.util.Calendar;
@@ -26,31 +29,63 @@ import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView txtLat, txtLong, txtSpeed, txtActivity, txtUpdateFequency, txtUpdateTime;
-    private ActivityRecognitionClient activityClient;
+    private final String TAG = "MainActivity";
 
-    private Intent locationIntent;
+    private TextView txtLat, txtLong, txtSpeed, txtActivity, tatUpdateFrequency, txtUpdateTime;
+
+    private ActivityRecognitionClient activityClient;
     private PendingIntent locationPendingIntent;
 
-    private String TAG = "MainActivity";
     private FusedLocationProviderClient locationClient;
 
-    private long currentInterval;
+    private BroadcastReceiver broadcastReceiver;
+    private LocalBroadcastManager localBroadcastManager;
 
-    public static MainActivity activity;
+    private FileUtil fileUtil;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        this.activity = this;
 
         getTextViews();
 
         this.locationClient = LocationServices.getFusedLocationProviderClient(this);
 
+        this.fileUtil = new FileUtil("Exercise6_Data.csv", "A_Data");
+
+        setUpBroadcastReceiver();
         setUpActivityRecognition();
 
+    }
+
+    private void setUpBroadcastReceiver() {
+        this.broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Location l = intent.getParcelableExtra("location");
+
+                String latitude = String.valueOf(l.getLatitude());
+                String longitude = String.valueOf(l.getLongitude());
+                String speed = String.valueOf(l.getSpeed());
+                String time = Calendar.getInstance().getTime().toString().split(" GMT")[0];
+
+
+                txtLat.setText(latitude);
+                txtLong.setText(longitude);
+                txtSpeed.setText(speed);
+                txtUpdateTime.setText(time);
+
+                fileUtil.appendToFile(time + "," + txtActivity.getText() + "," + tatUpdateFrequency.getText());
+            }
+        };
+
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction("jvs.new.location");
+
+        this.localBroadcastManager = LocalBroadcastManager.getInstance(this);
+        localBroadcastManager.registerReceiver(broadcastReceiver, intentFilter);
     }
 
     private void getTextViews() {
@@ -58,23 +93,32 @@ public class MainActivity extends AppCompatActivity {
         this.txtLong = findViewById(R.id.txtLong);
         this.txtSpeed = findViewById(R.id.txtSpeed);
         this.txtActivity = findViewById(R.id.txtActivity);
-        this.txtUpdateFequency = findViewById(R.id.txtUpdateFequency);
+        this.tatUpdateFrequency = findViewById(R.id.txtUpdateFequency);
         this.txtUpdateTime = findViewById(R.id.txtUpdateTime);
     }
 
-    private void setUpActivityRecognition(){
+    private void setUpActivityRecognition() {
         this.activityClient = ActivityRecognition.getClient(this);
 
         Intent activityIntent = new Intent(this, ActivityTransitionService.class);
+        activityIntent.putExtra("messenger", new Messenger(createActivityHandler()));
+        PendingIntent activityPendingIntent = PendingIntent.getService(this, 1, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        activityIntent.putExtra("messenger", new Messenger(new Handler(){
+        //Task<Void> task = activityClient.requestActivityTransitionUpdates(RequestFactory.createRequest(), activityPendingIntent);
+        Task<Void> task = activityClient.requestActivityUpdates(60 * 1000, activityPendingIntent);
+        task.addOnSuccessListener(aVoid -> Log.i(TAG, "Activity Transition task created"));
+        task.addOnFailureListener(e -> Log.i(TAG, "Activity transition failure in creation"));
+    }
+
+    private Handler createActivityHandler() {
+        return new Handler() {
             @Override
             public void handleMessage(@NonNull Message msg) {
                 Bundle data = msg.getData();
                 DetectedActivity activity = data.getParcelable("activity");
 
                 String type = DetectedActivityParser.parseActivityType(activity.getType());
-                long interval = DetectedActivityParser.parseActivitypeToInterval(activity.getType());
+                long interval = DetectedActivityParser.parseActivityTypeToInterval(activity.getType());
 
                 if (type == txtActivity.getText()) {
                     Log.i(TAG, "handleMessage: " + type + " == " + txtActivity.getText());
@@ -89,47 +133,35 @@ public class MainActivity extends AppCompatActivity {
                 }
 
 
-                Log.i(TAG, "handleMessage: Starting location updates for activity: " + type + " with a frequncy of " + interval);
+                Log.i(TAG, "handleMessage: Starting location updates for activity: " + type + " with a frequency of " + interval);
                 stopLocationUpdates();
                 startLocationUpdates(interval);
 
-                txtUpdateFequency.setText(String.valueOf(interval/1000) + " Seconds");
+                tatUpdateFrequency.setText(interval / 1000 + " Seconds");
             }
-        }));
-
-        PendingIntent activityPendingIntent = PendingIntent.getService(this, 1, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        //Task<Void> task = activityClient.requestActivityTransitionUpdates(RequestFactory.createRequest(), activityPendingIntent);
-        Task<Void> task = activityClient.requestActivityUpdates(60*1000, activityPendingIntent);
-        task.addOnSuccessListener(aVoid -> Log.i(TAG, "Activity Transition task created"));
-        task.addOnFailureListener(e -> Log.i(TAG, "Activity transition faliure in creation"));
+        };
     }
 
 
     private void startLocationUpdates(long interval) {
-        this.locationIntent = new Intent(this, LocationUpdateService.class);
-        this.locationIntent.addCategory().putExtra("jvs.MainActivity", new Messenger(new Handler(){
-            @Override
-            public void handleMessage(@NonNull Message msg) {
-                Bundle data = msg.getData();
-                Location l = data.getParcelable("location");
-                txtLat.setText(String.valueOf(l.getLatitude()));
-                txtLong.setText(String.valueOf(l.getLongitude()));
-                txtSpeed.setText(String.valueOf(l.getSpeed()));
-                txtUpdateTime.setText(Calendar.getInstance().getTime().toString());
-            }
-        }));
-
-        this.locationPendingIntent = PendingIntent.getService(this, 1, this.locationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        Intent intent = new Intent(this, LocationUpdateService.class);
+        this.locationPendingIntent = PendingIntent.getService(this, 1, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         this.locationClient.requestLocationUpdates(RequestFactory.createLocationRequest(interval), this.locationPendingIntent);
         this.locationClient.getLastLocation().addOnSuccessListener(location -> Log.i(TAG, "onSuccess: " + location.toString()));
     }
 
-    private void stopLocationUpdates(){
+    private void stopLocationUpdates() {
         if (locationPendingIntent == null) {
             return;
         }
         locationClient.removeLocationUpdates(locationPendingIntent);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        this.localBroadcastManager.unregisterReceiver(this.broadcastReceiver);
+        stopLocationUpdates();
+        this.activityClient.removeActivityUpdates(this.locationPendingIntent);
+    }
 }

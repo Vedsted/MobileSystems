@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 public class RequestFactory {
 
-    public static ActivityTransitionRequest createRequest(){
+    public static ActivityTransitionRequest createActivityTransitionRequest(){
         ArrayList<ActivityTransition> activityTransitions = new ArrayList<>();
 
         activityTransitions.add(new ActivityTransition.Builder().setActivityType(DetectedActivity.IN_VEHICLE).setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_ENTER).build());

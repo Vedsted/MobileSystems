@@ -42,8 +42,6 @@ public class ActivityTransitionService extends IntentService {
 
         ActivityRecognitionResult result = ActivityRecognitionResult.extractResult(intent);
 
-        String s = result.getMostProbableActivity().toString();
-
         Log.i(TAG, "onHandleIntent: " + result.getMostProbableActivity().toString());
         Bundle bundle = intent.getExtras();
 
